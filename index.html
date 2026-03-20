@@ -3,324 +3,614 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mô Phỏng Hệ Tọa Độ Descartes</title>
+    <title>Ôn Tập Vật Lý Cuối Kì - Ứng dụng Anki</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Prevent scrollbars from canvas resizing */
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
         }
-        canvas {
-            background-color: #1a202c; /* dark gray */
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out forwards;
         }
-        .input-group {
-            background-color: #2d3748; /* gray-700 */
-            border-radius: 0.5rem;
-            padding: 1rem;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        .label-coord {
-            font-size: 1.25rem;
-            font-weight: 700;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .btn-primary {
-            background-color: #4299e1; /* blue-500 */
-            transition: background-color 0.3s ease;
-        }
-        .btn-primary:hover {
-            background-color: #3182ce; /* blue-600 */
-        }
-        .btn-secondary {
-            background-color: #4a5568; /* gray-600 */
-            transition: background-color: 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background-color: #2d3748; /* gray-700 */
-        }
-        #info-panel {
-            min-height: 50px;
-            transition: all 0.3s ease;
-        }
+        /* Custom scrollbar for better UI */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center h-screen p-4">
+<body class="bg-gray-50 text-gray-800 font-sans flex flex-col h-[100dvh] overflow-hidden">
 
-    <div class="w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 h-full">
-        <!-- Control Panel -->
-        <div class="lg:w-1/3 w-full flex flex-col gap-4 p-6 bg-gray-800 rounded-lg shadow-2xl">
-            <h1 class="text-3xl font-bold text-center text-blue-400">Khám Phá Tọa Độ 🚀</h1>
-            <p class="text-center text-gray-400">Nhập tọa độ và xem điều kỳ diệu xảy ra!</p>
-            
-            <div class="input-group flex items-center justify-around gap-4">
-                <div class="flex items-center gap-3">
-                    <label for="x-coord" class="label-coord text-red-400">X:</label>
-                    <input type="number" id="x-coord" value="3" class="w-24 p-2 rounded bg-gray-900 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-center text-lg">
-                </div>
-                <div class="flex items-center gap-3">
-                    <label for="y-coord" class="label-coord text-green-400">Y:</label>
-                    <input type="number" id="y-coord" value="4" class="w-24 p-2 rounded bg-gray-900 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg">
+    <!-- HEADER -->
+    <header class="bg-blue-600 text-white shadow-md z-10 shrink-0">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button onclick="app.toggleSidebar()" class="lg:hidden p-1 bg-blue-700 rounded hover:bg-blue-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div>
+                    <h1 class="text-xl font-bold">ÔN TẬP VẬT LÝ CUỐI KÌ</h1>
+                    <p class="text-xs text-blue-100 hidden sm:block">Đầy đủ Lý thuyết & Trắc nghiệm Tương tác Anki</p>
                 </div>
             </div>
-
-            <div class="flex flex-col gap-3 mt-4">
-                <button id="plot-btn" class="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg text-lg">
-                    Vẽ Điểm
-                </button>
-                 <button id="reset-btn" class="w-full btn-secondary text-white font-bold py-2 px-4 rounded-lg">
-                    Làm Mới
-                </button>
-            </div>
-            
-            <div id="info-panel" class="mt-auto p-4 bg-gray-900 rounded-lg border border-gray-700 text-center">
-                <p id="info-text" class="text-gray-300">Sẵn sàng để bắt đầu!</p>
+            <div class="flex space-x-1 sm:space-x-2" id="nav-tabs">
+                <!-- Tabs will be rendered here -->
             </div>
         </div>
+    </header>
 
-        <!-- Canvas -->
-        <div class="lg:w-2/3 w-full h-full min-h-0">
-            <canvas id="coord-canvas" class="w-full h-full"></canvas>
-        </div>
+    <div class="flex flex-1 max-w-7xl mx-auto w-full overflow-hidden relative">
+        
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="hidden lg:flex flex-col bg-white w-64 h-full overflow-y-auto border-r z-20 absolute lg:static shadow-lg lg:shadow-none transition-all shrink-0">
+            <div class="p-4">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Danh mục ôn tập</h2>
+                <nav class="space-y-1" id="sidebar-nav">
+                    <!-- Chapters will be rendered here -->
+                </nav>
+                
+                <div class="mt-8 p-4 bg-blue-50 rounded-lg text-sm text-blue-800 border border-blue-100">
+                    <p class="font-bold flex items-center mb-1">
+                        <svg class="mr-1" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Luật chơi Anki
+                    </p>
+                    <p class="text-xs">Bấm <b>Lại/Khó</b> -> Câu hỏi sẽ lặp lại <b>bất thình lình</b> ngay sau vài câu để nhắc nhớ.<br>Bấm <b>Tốt/Dễ</b> -> Hoàn thành câu đó.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50 h-full relative" id="main-content">
+            <!-- Content will be rendered here -->
+        </main>
+
+        <!-- OVERLAY FOR MOBILE -->
+        <div id="sidebar-overlay" onclick="app.toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-10 hidden lg:hidden"></div>
     </div>
 
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
     <script>
-        // --- SETUP ---
-        const canvas = document.getElementById('coord-canvas');
-        const ctx = canvas.getContext('2d');
-        const plotBtn = document.getElementById('plot-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const xInput = document.getElementById('x-coord');
-        const yInput = document.getElementById('y-coord');
-        const infoText = document.getElementById('info-text');
+        const ICONS = {
+            guide: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>`,
+            theory: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`,
+            quiz: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"></path><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="m2 2 7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>`,
+            check: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            calculator: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="14.01"></line><line x1="16" y1="10" x2="16" y2="10.01"></line><line x1="16" y1="18" x2="16" y2="18.01"></line><line x1="12" y1="14" x2="12" y2="14.01"></line><line x1="12" y1="10" x2="12" y2="10.01"></line><line x1="12" y1="18" x2="12" y2="18.01"></line><line x1="8" y1="14" x2="8" y2="14.01"></line><line x1="8" y1="10" x2="8" y2="10.01"></line><line x1="8" y1="18" x2="8" y2="18.01"></line></svg>`,
+            beaker: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3h15"></path><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"></path><path d="M6 14h12"></path></svg>`
+        };
 
-        let originX, originY;
-        let unit = 30; // pixels per unit
-        let animationFrameId;
-
-        // --- CORE DRAWING FUNCTIONS ---
-
-        function setupCanvas() {
-            // Set canvas resolution to match its display size
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-
-            originX = canvas.width / (2 * dpr);
-            originY = canvas.height / (2 * dpr);
-            
-            drawGrid();
-        }
-
-        function drawGrid() {
-            const dpr = window.devicePixelRatio || 1;
-            const width = canvas.width / dpr;
-            const height = canvas.height / dpr;
-
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw grid lines
-            ctx.strokeStyle = '#2d3748'; // gray-700
-            ctx.lineWidth = 1;
-            
-            // Vertical lines
-            for (let x = originX + unit; x < width; x += unit) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, height);
-                ctx.stroke();
+        const CHAPTER_DATA = [
+            {
+                id: "ch1_2",
+                title: "Chương 1 + 2: Chuyển động một chiều",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">1. Tổng kết Chuyển động một chiều</h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                        <li><strong>Độ dời:</strong> Δx = x₂ - x₁</li>
+                        <li><strong>Khoảng thời gian:</strong> Δt = t₂ - t₁</li>
+                        <li><strong>Tốc độ trung bình:</strong> v = S / Δt</li>
+                        <li><strong>Vận tốc trung bình:</strong> v = Δx / Δt</li>
+                        <li><strong>Vận tốc tức thời:</strong> v = dx / dt</li>
+                        <li><strong>Gia tốc trung bình:</strong> a = Δv / Δt</li>
+                        <li><strong>Gia tốc tức thời:</strong> a = dv / dt</li>
+                        </ul>
+                        <h3 class="font-bold text-lg text-blue-700 mt-4">2. Chuyển động với gia tốc không đổi (a = const)</h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                        <li>v = v₀ + at</li>
+                        <li>x = x₀ + v₀t + ½at²</li>
+                        <li>v² - v₀² = 2a(x - x₀)</li>
+                        </ul>
+                    </div>
+                `,
+                questions: [
+                    { correct: 2, q: "Câu 1: Một người tập thể dục bắt đầu chạy từ vị trí x1 = 30 m đến x2 = 10 m rồi trở lại chỗ xuất phát. Độ dời bằng", options: ["A. 20 m.", "B. 40 m.", "C. 0 m."], experiment: "📍 Độ dời CHỈ quan tâm điểm xuất phát và kết thúc! Điểm đầu và cuối trùng nhau (đều là 30) nên độ dời = 0. Quãng đường đi mới là 40m." },
+                    { correct: 1, q: "Câu 2: Vận tốc trung bình của xe ô tô là (Biết Δx = 1609m, t = 4.740s)", options: ["A. - 339,5 m/s.", "B. 339,5 m/s.", "C. Giá trị khác."], experiment: "📍 Casio: 1609 ÷ 4.740 = 339.45 m/s. Tốc độ này xấp xỉ tốc độ âm thanh, xe phản lực!" },
+                    { correct: 0, q: "Câu 3: Hai xe ô tô A và B chạy cùng tốc độ 15,0 m/s theo hướng vuông góc nhau. Vận tốc của chúng:", options: ["A. Khác nhau.", "B. Bằng nhau."], experiment: "📍 Vận tốc là ĐẠI LƯỢNG VECTOR (có hướng). Dù tốc độ đều 15m/s, nhưng hướng chạy khác nhau => Vận tốc khác nhau!" },
+                    { correct: 1, q: "Câu 4: a) CĐ tròn với vận tốc không đổi; b) CĐ tròn với tốc độ không đổi. Phát biểu đúng là", options: ["A. Phát biểu a).", "B. Phát biểu b).", "C. Cả hai đều đúng.", "D. Cả hai đều sai."], experiment: "📍 Hướng văng của vật quay tròn liên tục thay đổi => Vận tốc thay đổi (a sai). Chỉ có Tốc độ vô hướng mới không đổi." },
+                    { correct: 2, q: "Câu 5: x = 2t³ + 5t² (m). Xác định gia tốc hạt tại t = 2 s.", options: ["A. 24 m/s².", "B. 36 m/s².", "C. 34 m/s²."], experiment: "📍 Nhẩm tay v = dx/dt = 6t² + 10t. Casio: SHIFT + d/dx (6x² + 10x) tại x=2. Bằng 34 m/s²." },
+                    { correct: 0, q: "Câu 6: Đồ thị vị trí dạng đường cong lồi lên trên. Thời điểm vật đổi chiều chuyển động là:", options: ["A. Tại đỉnh cong (t2).", "B. Thời điểm khác.", "C. Tại t1."], experiment: "📍 Ném quả bóng lên cao. Ngay tại điểm cao nhất (đỉnh đồ thị), quả bóng dừng lại 1 khoảnh khắc v=0 trước khi rơi xuống." },
+                    { correct: 0, q: "Câu 7: Sai số tỉ đối trong phép đo 5,48 ± 0,25 (m) là bao nhiêu?", options: ["A. 4,56%.", "B. 0,046%.", "C. 21,92%."], experiment: "📍 Casio: (Sai số / Giá trị) × 100%. Bấm: (0.25 ÷ 5.48) × 100 = 4.56 %." },
+                    { correct: 1, q: "Câu 8: Công thức nào có thể đúng theo phân tích thứ nguyên? (a) x=vt²+2at | (b) x=v₀t+at²/2 | (c) x=v₀t+2a²t²", options: ["A. (a)", "B. (b)", "C. (c)"], experiment: "📍 Nhìn vào (b), x(m) = v₀.t (m/s * s = m) + 0.5.a.t² (m/s² * s² = m). Cả 2 vế đều là Đơn vị Mét đồng nhất!" },
+                    { correct: 0, q: "Câu 9: Người chạy đạt tốc độ lớn nhất 11,5 m/s trong 15 m đầu. Tìm gia tốc trung bình và thời gian?", options: ["A. 4,41 m/s² ; 2,61 s.", "B. 8,82 m/s² ; 1,30 s."], experiment: "📍 Casio: a = (11.5² - 0) ÷ (2 × 15) = 4.408 m/s². t = v/a = 11.5 ÷ 4.408 = 2.608 s." },
+                    { correct: 0, q: "Câu 10: Ném trái banh thẳng lên với v0 = 20 m/s. Hãy tính độ cao cực đại?", options: ["A. 20,4 m.", "B. 10,2 m.", "C. 40,8 m."], experiment: "📍 Casio: s = (0 - 20²) ÷ (2 × -9.8) = 20.4 m. Tương đương tầng 6 tòa nhà!" }
+                ]
+            },
+            {
+                id: "ch3",
+                title: "Chương 3: Chuyển động 2 & 3 chiều",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">Chuyển động ném xiên</h3>
+                        <ul class="list-disc pl-5 space-y-1 text-gray-700 mb-4">
+                            <li><strong>Theo y:</strong> v_y0 = v₀sin(θ₀), a_y = -g. <br> Phương trình y = y₀ + v_y0.t - ½gt²</li>
+                            <li><strong>Theo x:</strong> v_x0 = v₀cos(θ₀), a_x = 0.<br> Phương trình x = x₀ + v_x0.t</li>
+                            <li><strong>Độ cao cực đại:</strong> y_max = (v₀sinθ₀)² / (2g)</li>
+                            <li><strong>Tầm xa:</strong> L = x_max = v₀²sin(2θ₀) / g</li>
+                        </ul>
+                    </div>
+                `,
+                questions: [
+                    { correct: 3, q: "Câu 1: Trực thăng cứu hộ bay ngang thả túi hàng. Người dưới đất thấy túi hàng bay theo quỹ đạo nào?", options: ["A. (a)", "B. (b)", "C. (c)", "D. (d) Parabol chéo tới.", "E. (e)"], experiment: "📍 Thả cục đá khi đang đạp xe, người đứng ven đường sẽ thấy cục đá có ĐÀ CHẠY NGANG tạo thành hình cong Parabol chéo tới trước!" },
+                    { correct: 0, q: "Câu 2: Như câu 1. Nhưng phi công trên máy bay nhìn thấy túi hàng bay theo đường nào?", options: ["A. (b) Rớt thẳng đứng xuống", "B. (c)", "C. (d)", "D. (e)"], experiment: "📍 Phi công và túi hàng CÙNG vận tốc phương ngang. Với phi công, túi hàng không bị lệch ngang tí nào, nó chỉ rớt thẳng đứng xuống!" },
+                    { correct: 1, q: "Câu 3: Một hòn đá được ném theo phương ngang thì:", options: ["A. Theo phương thẳng đứng là CĐ chậm dần đều.", "B. Theo phương thẳng đứng là CĐ nhanh dần đều.", "C. Theo phương thẳng đứng là CĐ thẳng đều."], experiment: "📍 Viên bi lăn khỏi mép bàn, rớt theo phương dọc y chang viên bi tuột khỏi tay (rơi tự do) -> Nhanh dần đều." },
+                    { correct: 1, q: "Câu 4: Ngồi trong xe đang chạy thẳng đều và tung quả cam thẳng đứng lên. Nó sẽ rơi xuống:", options: ["A. phía sau bạn.", "B. vào lại nơi tay bạn.", "C. phía trước bạn."], experiment: "📍 Quả cam vẫn có quán tính chạy tới ngang theo xe y chang tay bạn. Nên nó sẽ rơi gọn lại vào đúng tay bạn!" },
+                    { correct: 0, q: "Câu 5: r1 = 2i - 5j - 3k. r2 = i - 5j + 4k. Độ dời bằng bao nhiêu?", options: ["A. Δr = -i + 7k.", "B. Δr = 3i - 10j + k."], experiment: "📍 Casio: MENU 5 (Vector). VctA=[2,-5,-3], VctB=[1,-5,4]. Tính VctB - VctA = [-1, 0, 7] tức là -i + 7k." },
+                    { correct: 0, q: "Câu 6: Vị trí r = 3t i + 6 j - 2t² k. Vận tốc trung bình giữa t = 1s và t = 3s?", options: ["A. 3i - 8k.", "B. 6i - 16k.", "C. 12i + 12j - 20k."], experiment: "📍 r1 = [3,6,-2], r2 = [9,6,-18]. Δr = [6,0,-16]. Δt = 2. v_tb = Δr/2 = [3,0,-8] => 3i - 8k." },
+                    { correct: 2, q: "Câu 7: r = (4t+6t²)i + (7+5t³)j. Độ lớn v và a tại t = 2 s.", options: ["A. v = 33,1; a = 30", "B. v = 33,1; a = 61,2", "C. v = 66,2; a = 61,2"], experiment: "📍 Đạo hàm v_x = 4+12t, v_y = 15t². Tại t=2 => v_x=28, v_y=60. v = √(28²+60²) = 66.2. Đạo hàm tiếp a_x=12, a_y=30t=60. a = √(12²+60²) = 61.2." },
+                    { correct: 0, q: "Câu 8: Ném ngang hòn đá với v=10m/s từ độ cao 80m. Thời gian và tầm xa?", options: ["A. t = 4,04 s; L = 40,4 m.", "B. t = 16,32 s; L = 163,2 m."], experiment: "📍 Rơi tự do: t = √(2h/g) = √(2×80÷9.8) = 4.04s. Tầm xa L = v.t = 10×4.04 = 40.4m." },
+                    { correct: 0, q: "Câu 9: Bắn vật từ dốc cao 115m với v=65m/s góc ném xiên 35°. Thời gian chạm đất?", options: ["A. 10 s.", "B. 20 s."], experiment: "📍 Casio: Giải pt bậc 2 `y = -0.5gt² + v₀y.t + y0 = 0`. MENU 9 2 2. Hệ số: -0.5×9.8 ; 65×sin(35) ; 115. => t ≈ 9.96s." },
+                    { correct: 1, q: "Câu 10: Đá bóng lên không trung. Ở Mặt Trăng (g nhỏ hơn 6 lần), độ cao max sẽ:", options: ["A. nhỏ hơn H.", "B. lớn hơn H.", "C. bằng H."], experiment: "📍 Trọng lực Mặt trăng yếu, lực hãm bóng bay lên rất yếu => Quả bóng bay bổng vút cao gấp 6 lần bình thường!" }
+                ]
+            },
+            {
+                id: "ch4",
+                title: "Chương 4: Động lực học",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">Các Định luật Newton</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-yellow-50 p-4 rounded shadow-sm border border-yellow-200">
+                            <h4 class="font-bold mb-2">Định luật I</h4>
+                            <p class="text-sm text-gray-700">Vật giữ nguyên trạng thái nếu tổng lực bằng 0 (Quán tính).</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded shadow-sm border border-green-200">
+                            <h4 class="font-bold mb-2">Định luật II</h4>
+                            <p class="text-sm text-gray-700 text-center font-bold text-lg mt-4">a = ΣF / m</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded shadow-sm border border-purple-200">
+                            <h4 class="font-bold mb-2">Định luật III</h4>
+                            <p class="text-sm text-gray-700 text-center font-bold text-lg mt-4">F_AB = - F_BA</p>
+                        </div>
+                        </div>
+                    </div>
+                `,
+                questions: [
+                    { correct: 1, q: "Câu 1: Một vật đang chuyển động 3 m/s. Nếu bỗng nhiên các lực tác dụng bị mất đi thì", options: ["A. vật chuyển động chậm dần rồi dừng.", "B. vật tiếp tục chuyển động 3m/s.", "C. vật đổi hướng.", "D. vật dừng ngay."], experiment: "📍 ĐL 1 Newton. Trạm vũ trụ ISS không trọng lực, phi hành gia đẩy sách đi 3m/s, nó sẽ trôi lơ lửng mãi mãi với tốc độ đó!" },
+                    { correct: 0, q: "Câu 2: Hai người trượt băng đối diện đẩy nhau. Phát biểu đúng là:", options: ["A. Lực tác dụng lên mỗi người bằng nhau.", "B. Lực tác dụng khác nhau.", "C. Gia tốc thu được bằng nhau."], experiment: "📍 ĐL 3 Newton. Đẩy tường, tường đẩy lại lực Y CHANG làm bạn trượt lùi! Lực luôn bằng nhau, dù 1 người mập/gầy, chỉ gia tốc (bật ngửa) khác nhau." },
+                    { correct: 3, q: "Câu 3: Làm động tác hít đất: chống tay nâng người lên thì", options: ["A. người tác dụng lên sàn lực hướng lên.", "B. người không tác dụng lực lên sàn.", "C. sàn không tác dụng lực.", "D. sàn tác dụng lên người lực hướng lên."], experiment: "📍 Bạn đẩy sàn XUỐNG DƯỚI. Tức thời, sàn phản ứng đẩy hướng LÊN người bạn, nhấc cơ thể bạn lên!" },
+                    { correct: 3, q: "Câu 4: Đi bộ/kéo xe tới trước, lực tác dụng làm người chuyển động về phía trước là lực mà", options: ["A. người tác dụng vào xe.", "B. xe tác dụng vào người.", "C. người tác dụng vào mặt đất.", "D. mặt đất tác dụng vào người."], experiment: "📍 Chân bạn đạp đất ra sau. Đất lập tức tác dụng lực ma sát ngược lại đẩy người tới trước. Chạy được là do đất đẩy!" },
+                    { correct: 2, q: "Câu 5: Khối lượng 5kg, v tăng từ 2m/s đến 6m/s trong 2s. Lực tác dụng là:", options: ["A. 7,5 N.", "B. 5,0 N.", "C. 10 N.", "D. 2,5 N."], experiment: "📍 a = (6 - 2) ÷ 2 = 2 m/s². ĐL 2 Newton: F = m.a = 5 × 2 = 10 N." },
+                    { correct: 1, q: "Câu 6: Đá quả bóng bằng lực 15 N, thu được gia tốc 6 m/s². Khối lượng bóng?", options: ["A. 0,80 kg.", "B. 2,50 kg.", "C. 2,08 kg.", "D. 5,00 kg."], experiment: "📍 F = m.a => m = F/a = 15 ÷ 6 = 2.5 kg." },
+                    { correct: 2, q: "Câu 7: Lực F1=3N, F2=5N tác dụng vào vật 1.5kg (góc giữa 2 lực là 135°). Gia tốc vật thu được:", options: ["A. 1,3 m/s².", "B. 5,3 m/s².", "C. 2,4 m/s².", "D. 3,6 m/s²."], experiment: "📍 Casio MENU 2. Lực tổng hợp = `3∠0 + 5∠135`. Bấm OPTN ⬇ 1 -> Độ lớn ≈ 3.56 N. Chia khối lượng 1.5 => a ≈ 2.4 m/s²." },
+                    { correct: 2, q: "Câu 8: Khối lượng 2 kg giữ yên trên dốc 30° bằng dây. Lực căng dây?", options: ["A. 17 N.", "B. 25 N.", "C. 9,8 N.", "D. 19,6 N."], experiment: "📍 Dây phải cân bằng với lực trượt xuống (P.sinα). T = mg.sin(30) = 2 × 9.8 × sin(30) = 9.8 N." },
+                    { correct: 1, q: "Câu 9: Hộp 7.0kg trượt dốc nhẵn 22°. Tìm gia tốc, vận tốc (tại 12m) và thời gian?", options: ["A. Đáp án khác", "B. a=3.7m/s²; v=9.4m/s; t=2.54s"], experiment: "📍 a = g.sin(22) = 9.8×sin22 = 3.67. v = √(2as) = √(2×3.67×12) = 9.38. t = v/a = 9.38÷3.67 = 2.55s." },
+                    { correct: 0, q: "Câu 10: Ròng rọc m1=1kg, m2=2.5kg trên dốc 30° nhẵn. Tìm a và T.", options: ["A. a=0,7 m/s² ; T=10,5 N", "B. Đáp án khác"], experiment: "📍 Lập 2 PT: T - m1.g = m1.a; m2.g.sin(30) - T = m2.a. Bấm MENU 9 1 2, hệ số: 1, -1, 1*9.8; -1, -2.5, -2.5*9.8*sin30 => a=0.7, T=10.5 N." }
+                ]
+            },
+            {
+                id: "ch5",
+                title: "Chương 5: Ứng dụng định luật Newton",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">1. Lực ma sát</h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                        <li><strong>Ma sát tĩnh:</strong> f_s ≤ μ_s * F_N</li>
+                        <li><strong>Ma sát tĩnh cực đại:</strong> f_smax = μ_s * F_N</li>
+                        <li><strong>Ma sát động:</strong> f_k = μ_k * F_N</li>
+                        </ul>
+                    </div>
+                `,
+                questions: [
+                    { correct: 1, q: "Câu 1: Lực ma sát động không phụ thuộc vào", options: ["A. bản chất bề mặt.", "B. tốc độ và diện tích tiếp xúc.", "C. lực pháp tuyến N."], experiment: "📍 Diện tích tiếp xúc to hay nhỏ KHÔNG đổi lực ma sát! (Kéo cục gạch dựng đứng hay nằm ngang đều nặng tay như nhau)." },
+                    { correct: 0, q: "Câu 2: Trọng lượng 80N BẮT ĐẦU TRƯỢT khi lực kéo ngang đạt 35N. Vậy:", options: ["A. F_mstĩnh cực đại = 35 N.", "B. F_mstĩnh = 80 N.", "C. Nằm giữa 35 và 80."], experiment: "📍 Ngưỡng chịu đựng tối đa của ma sát trước khi bị phá vỡ (bắt đầu trượt) đúng bằng lực kéo tại thời điểm đó: 35N!" },
+                    { correct: 2, q: "Câu 3: 3 viên gạch giống nhau đặt trên bàn với các mặt tiếp xúc khác nhau. Lực kéo tối thiểu làm trượt:", options: ["A. Tăng dần.", "B. Giảm dần.", "C. Giống nhau ở cả 3."], experiment: "📍 Khối lượng không đổi, mặt bàn không đổi (hệ số μ ko đổi), diện tích ko quan trọng => Lực kéo làm trượt y hệt nhau." },
+                    { correct: 3, q: "Câu 4: Trong chuyển động tròn đều vật có:", options: ["A. vận tốc không đổi.", "B. gia tốc không đổi.", "C. gia tốc cùng phương vận tốc.", "D. gia tốc vuông góc vận tốc hướng vào tâm."], experiment: "📍 Cái kéo vật vào quỹ đạo cong gọi là Gia Tốc Hướng Tâm, luôn vuông góc với vận tốc và chỉa thẳng vào tâm." },
+                    { correct: 1, q: "Câu 5: Người ở Xích Đạo và người ở Cực Nam, ai có gia tốc hướng tâm lớn hơn?", options: ["A. Người ở Cực Nam.", "B. Người ở Xích Đạo."], experiment: "📍 Trò đu quay vòng xoay. Đứng ở rìa (Xích đạo) văng mạnh nhất vì Bán kính R lớn. Đứng lõi trục (Cực) chả văng tí nào (R=0)." },
+                    { correct: 0, q: "Câu 6: Hộp 10kg bị kéo lực 50N góc 30° lên. Ma sát μ=0.3. Tìm a.", options: ["A. 1,1 m/s².", "B. 2,1 m/s²."], experiment: "📍 F_x = 50.cos(30). Lực đè N = mg - 50.sin(30). F_ms = 0.3×N. a = (F_x - F_ms)÷m = 1.1 m/s²." },
+                    { correct: 0, q: "Câu 7: Hộp 25kg trượt dốc 30° với a=0.3 m/s². Tìm lực ma sát và μ.", options: ["A. Fms=115 N; μ=0,54", "B. Đáp án khác"], experiment: "📍 mg.sin(30) - F_ms = ma. => F_ms = 25×(9.8.sin30 - 0.3) = 115N. μ = F_ms / (mg.cos30) = 0.54." },
+                    { correct: 1, q: "Câu 8: Bóng buộc dây quay tròn mặt phẳng đứng. Tìm tốc độ tối thiểu ở điểm cao nhất để dây không chùng.", options: ["A. Đáp án khác", "B. v=3,28 m/s; T=7,35 N."], experiment: "📍 Trọng lực P chính là lực hướng tâm tối thiểu. mg = m.v²/R => v = √(g.R) = √(9.8 × 1.1) = 3.28 m/s." },
+                    { correct: 0, q: "Câu 9: Xe ôm cua đường ngang bán kính 80m. Ma sát tĩnh 0.55. Tốc độ max ko trượt?", options: ["A. 75 km/h.", "B. 65 km/h.", "C. 50 km/h.", "D. 60 km/h."], experiment: "📍 Lực ma sát chính là lực hướng tâm giữ xe: m.v²/R = μ.m.g. Casio: v_max = √(0.55 × 9.8 × 80) = 20.76 m/s = 74.7 km/h." },
+                    { correct: 0, q: "Câu 10: Khúc cua R=50m thiết kế nghiêng để v=36km/h (10m/s) qua mà ko cần ma sát. Góc nghiêng θ?", options: ["A. 11,5°", "B. 15,2°", "C. 20,5°"], experiment: "📍 Cầm bát canh hơi nghiêng khi ôm cua chạy nhanh để khỏi trào. tan(θ) = v² / (R.g) = 10² ÷ (50×9.8) = 0.204. SHIFT tan => 11.5°." }
+                ]
+            },
+            {
+                id: "ch7_8",
+                title: "Chương 7 & 8: Công và Năng lượng",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">Định luật bảo toàn</h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                        <li><strong>Định lý Công - Động năng:</strong> ΣW = K₂ - K₁ = ΔK</li>
+                        <li><strong>Bảo toàn cơ năng (chỉ có lực bảo toàn):</strong> E = K + U = const</li>
+                        <li><strong>Có lực không bảo toàn:</strong> ΔE = W_kbt</li>
+                        </ul>
+                    </div>
+                `,
+                questions: [
+                    { correct: 2, q: "Câu 1: Mặt trăng quay quanh Trái đất quỹ đạo tròn. Lực hấp dẫn thực hiện công nào?", options: ["A. Công dương;", "B. Công âm;", "C. Không thực hiện công."], experiment: "📍 Lực hấp dẫn vuông góc (90 độ) với hướng bay. cos(90°) = 0, lực này chỉ bẻ cong đường đi chứ không sinh công (W=0)." },
+                    { correct: 1, q: "Câu 2: Vệ tinh ở quỹ đạo tròn (a) và ellipse (b). Ở đâu thì động năng thay đổi?", options: ["A. (a)", "B. (b) Ellipse", "C. Cả hai"], experiment: "📍 Ellipse giống sao chổi: Sượt gần TĐ bị hút bay siêu tốc, văng xa bay rất chậm. Nên động năng thay đổi ở quỹ đạo Ellipse." },
+                    { correct: 2, q: "Câu 3: Một ngoại lực (khác 0) tác dụng lên vật chuyển động thẳng. Phát biểu đúng là:", options: ["A. v đổi, K ko đổi", "B. K đổi, v ko đổi", "C. Cả v và động năng K đều thay đổi", "D. Cả hai không đổi"], experiment: "📍 Định lý Động năng: Công ngoại lực = Biến thiên Động năng. Đã có lực xô tới thì Động năng (½mv²) thay đổi, kéo theo v thay đổi." },
+                    { correct: 1, q: "Câu 4: Máy bay hạ cánh hãm phanh rồi dừng hẳn. Ngoại lực ma sát đã thực hiện:", options: ["A. Công dương.", "B. Công âm.", "C. Không thực hiện công."], experiment: "📍 Xe trượt tới nhưng ma sát níu lùi ra sau. Góc 180°. W = F.d.cos(180) = Lực × d × (-1) < 0 => Công Âm hút bớt sức lực." },
+                    { correct: 3, q: "Câu 5: Đẩy thùng hàng lên dốc, lực tác dụng nhưng KHÔNG sinh công là:", options: ["A. Trọng lực P.", "B. Ma sát động.", "C. Lực đẩy F.", "D. Lực pháp tuyến N."], experiment: "📍 Pháp tuyến N vuông góc sàn dốc. W = F.d.cos(90°) = 0. Nó chỉ giữ vật ko thủng sàn chứ ko tốn giọt mồ hôi sinh công nào." },
+                    { correct: 2, q: "Câu 6: Công của lực F: Đâm chéo xuống (a), Vuông góc (b), Đẩy thẳng ngang (c). Xếp theo độ lớn Tăng Dần:", options: ["A. a, b, c", "B. a, c, b", "C. b, a, c", "D. c, a, b"], experiment: "📍 (b) ấn thẳng đứng lưng vật, Công=0. (a) đâm chéo kéo yếu. (c) đẩy thẳng ngang trượt băng băng => Công Max. Vậy 0 < a < c." },
+                    { correct: 2, q: "Câu 7: Công tăng tốc xe 1000kg từ 0 lên 10m/s:", options: ["A. -50000 J", "B. 200000 J", "C. 50000 J", "D. 300000 J"], experiment: "📍 Công = Độ biến thiên Động năng. Bấm Casio: 0.5 × 1000 × 10² - 0 = 50,000 J." },
+                    { correct: 2, q: "Câu 8: Công trọng lực khi đi đường vòng 1A2 và đường zic-zắc 1B2:", options: ["A. Khác nhau.", "B. Trái dấu.", "C. Bằng nhau."], experiment: "📍 Đi thang bộ zigzag hay thẳng thang máy. Trọng lực là Lực Bảo Toàn, chỉ quan tâm độ cao chênh lệch mgh. Đi kiểu gì cũng tốn công y hệt!" },
+                    { correct: 2, q: "Câu 9: Xe không ma sát rơi từ h=32m, vọt sang đồi h=14m. Tính tốc độ v?", options: ["A. 10.8 m/s", "B. 25 m/s", "C. 18.8 m/s"], experiment: "📍 Bảo toàn cơ năng: Thế năng mất = Động năng sinh ra. mg(32 - 14) = 0.5mv². => v = √(2 × 9.8 × 18) = 18.78 m/s." },
+                    { correct: 2, q: "Câu 10: Ván trượt tuyết dốc 30° dài 100m, μ=0.09. Tốc độ cuối dốc?", options: ["A. 28.8 m/s", "B. 5.42 m/s", "C. 25.4 m/s", "D. 3.83 m/s"], experiment: "📍 Năng lượng hụt mgh biến thành Động năng 0.5mv² + nhiệt ma sát. v = √(2g.s.sin30 - 2μ.g.cos30.s) = 25.4 m/s." }
+                ]
+            },
+            {
+                id: "ch9",
+                title: "Chương 9: Động lượng tuyến tính",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">Bảo toàn động lượng</h3>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                        <li><strong>Định luật bảo toàn:</strong> p_A + p_B = p'_A + p'_B</li>
+                        <li><strong>Va chạm đàn hồi:</strong> Tổng động năng K không đổi.</li>
+                        <li><strong>Va chạm không đàn hồi:</strong> Tổng động năng K giảm.</li>
+                        </ul>
+                    </div>
+                `,
+                questions: [
+                    { correct: 1, q: "Câu 1: Vecto động lượng p và vận tốc v có liên hệ:", options: ["A. Cùng phương, ngược chiều.", "B. Cùng phương, cùng chiều.", "C. Vuông góc.", "D. Góc khác 0."], experiment: "📍 p = m*v. Vì khối lượng m dương, Vector Động lượng p như hình bóng của Vận tốc v, bám theo y chang cùng phương cùng chiều." },
+                    { correct: 2, q: "Câu 2: Va chạm đàn hồi (không hụt động năng) là hiện tượng:", options: ["A. Ném đất sét vào tường.", "B. Cắt trái cây.", "C. Bắn bi-a vào bi-a.", "D. Đạn vào bao cát."], experiment: "📍 2 viên bi-a va vào nhau nảy ra cái cộp cực nhanh, không móp méo -> Đàn hồi. Ném đất sét dính bẹp dúm -> Không đàn hồi." },
+                    { correct: 1, q: "Câu 3: Rơi tự do m=1kg trong 2s (g=9.8). Biến thiên động lượng?", options: ["A. 20 kg.m/s.", "B. 19,6 kg.m/s.", "C. 38,3 kg.m/s.", "D. 39,2 kg.m/s"], experiment: "📍 Xung lực J = Trọng lượng P × t = 1×9.8×2 = 19.6 kg.m/s. Xung lượng tác dụng = Biến thiên động lượng nhận được!" },
+                    { correct: 0, q: "Câu 4: m1=2g, m2=3g chuyển động VUÔNG GÓC v=5m/s và 4m/s. Tổng động lượng hệ?", options: ["A. 0,0156 kg.m/s.", "B. 0,017 kg.m/s.", "C. 0,020 kg.m/s.", "D. 0,050 kg.m/s."], experiment: "📍 Động lượng là vector. P = √(P1² + P2²). Đổi gam ra kg: √((0.002×5)² + (0.003×4)²) = 0.0156 kg.m/s." },
+                    { correct: 1, q: "Câu 5: Bóng 500g đập tường v=4.5 m/s, nảy NGƯỢC LẠI v=3.5 m/s. Động lượng thay đổi lượng bằng:", options: ["A. 2", "B. 4 kg.m/s", "C. 6", "D. 5"], experiment: "📍 Vì nảy NGƯỢC chiều, Vận tốc biến thiên cực lớn Δv = v1 - (-v2) = 4.5 + 3.5 = 8 m/s. Δp = m.Δv = 0.5 × 8 = 4 kg.m/s." },
+                    { correct: 1, q: "Câu 6: Đạn 40g (v=600) xuyên cửa thép 0.002s rớt còn v=300. Lực cản cánh cửa?", options: ["A. 3000 N", "B. 6000 N", "C. 9000 N", "D. 600 N"], experiment: "📍 Lực cản = Độ hụt động lượng / Thời gian. F = 0.04×(600-300)÷0.002 = 6000 N. Cửa tạo lực 600kg cản đạn!" },
+                    { correct: 2, q: "Câu 7: m1 đâm m2 đứng yên (m1 = 4m2). DÍNH vào nhau. Tỉ số Động Năng trước/sau va chạm?", options: ["A. 1/4", "B. 4/5", "C. 5/4", "D. 1"], experiment: "📍 Bảo toàn p: 4v1 = 5v2 -> v2=4v1/5. Lập tỉ số Động năng: (0.5×4×v1²)/(0.5×5×v2²). Rút gọn máy tính: 4 / (5 × (4/5)²) = 5/4." }
+                ]
+            },
+            {
+                id: "ch10",
+                title: "Chương 10: Chuyển động quay",
+                theory: `
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg text-blue-700">Các đại lượng góc và Tuyến tính</h3>
+                        <table class="w-full text-sm border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100"><th class="border p-2">Đại lượng góc</th><th class="border p-2">Đại lượng tuyến tính</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="border p-2">Góc quay: θ (rad)</td><td class="border p-2">v = rω (m/s)</td></tr>
+                            <tr><td class="border p-2">Δθ = θ₂ - θ₁ (rad)</td><td class="border p-2">a_t = rα (m/s²)</td></tr>
+                            <tr><td class="border p-2">ω_TB = Δθ/Δt (rad/s)</td><td class="border p-2">a_r = v²/r = rω²</td></tr>
+                            <tr><td class="border p-2">ω = dθ/dt (rad/s)</td><td class="border p-2">a = a_r + a_t</td></tr>
+                            <tr><td class="border p-2">α_TB = Δω/Δt (rad/s²)</td><td class="border p-2"></td></tr>
+                            <tr><td class="border p-2">α = dω/dt = d²θ/dt² (rad/s²)</td><td class="border p-2"></td></tr>
+                        </tbody>
+                        </table>
+                    </div>
+                `,
+                questions: [
+                    { correct: 3, q: "Câu 1: Bánh xe quay 3,0 rad/s, thời gian hoàn thành 1 vòng?", options: ["A. 0,33 s", "B. 0,67 s", "C. 1,0 s", "D. 2,1 s"], experiment: "📍 Một vòng tròn = góc quét 2π rad. Thời gian 1 vòng T = 2π / ω = 2π ÷ 3 ≈ 2.09 s." },
+                    { correct: 0, q: "Câu 2: 10 giây sau bật quạt, quạt đạt 300 vòng/phút. Gia tốc góc TB?", options: ["A. 3,14 rad/s².", "B. 30 rad/s².", "C. 30 Vòng/s².", "D. 50 vòng/phút²."], experiment: "📍 Đổi 300 vòng/phút ra Rad: (300 × 2π) ÷ 60 = 10π rad/s. α = ω / t = 10π ÷ 10 = 3.14 rad/s²." },
+                    { correct: 0, q: "Câu 3: Đĩa quay đều, điểm Q ở rìa xa tâm gấp 3 lần điểm P sát lõi. Vận tốc góc của Q so với P:", options: ["A. bằng nhau.", "B. gấp 3.", "C. nhỏ hơn 3."], experiment: "📍 Chấm 2 điểm đỏ. Khi đĩa quay 1 vòng, cả 2 điểm hoàn thành cùng lúc! Góc quét mỗi giây BẰNG NHAU. Q chỉ đi nhanh hơn tuyến tính (v=rω) do R lớn!" },
+                    { correct: 1, q: "Câu 4: Quạt trực thăng quay 6,5 vòng/s. Vận tốc tuyến tính điểm r=6.7m và r=9.7m?", options: ["A. 19.5; 43.6", "B. 273 m/s; 396 m/s", "C. 122; 273"], experiment: "📍 ω = 6.5×2π = 40.84 rad/s. v = R.ω. => v1 = 6.7×40.84=273.6 m/s. v2 = 9.7×40.84=396 m/s." },
+                    { correct: 1, q: "Câu 5: Trái Đất tự quay. Đứng ở đâu tốc độ tuyến tính vòng quay NHỎ NHẤT?", options: ["A. Xích đạo.", "B. Cực nam hoặc cực bắc.", "C. Chỗ nào cũng như nhau."], experiment: "📍 Tại Cực Bắc (lõi trụ), R=0, bạn chỉ tự xoay vòng tròn. Càng đi bộ về Xích đạo, bạn càng bị vòng quay quăng đi tốc độ khủng khiếp! Cực là nhỏ nhất." }
+                ]
             }
-            for (let x = originX - unit; x > 0; x -= unit) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, height);
-                ctx.stroke();
-            }
-            // Horizontal lines
-            for (let y = originY + unit; y < height; y += unit) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
-            for (let y = originY - unit; y > 0; y -= unit) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }
+        ];
 
-            // Draw axes
-            ctx.strokeStyle = '#a0aec0'; // gray-400
-            ctx.lineWidth = 2;
-            // X-axis (Trục hoành)
-            ctx.beginPath();
-            ctx.moveTo(0, originY);
-            ctx.lineTo(width, originY);
-            ctx.stroke();
-            // Y-axis (Trục tung)
-            ctx.beginPath();
-            ctx.moveTo(originX, 0);
-            ctx.lineTo(originX, height);
-            ctx.stroke();
-            
-            // Draw labels and numbers
-            ctx.fillStyle = '#cbd5e0'; // gray-300
-            ctx.font = '14px Inter';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+        // Rút gọn Guide HTML để Code nhẹ
+        const GUIDE_CONTENT = `
+            <div class="space-y-6 animate-fade-in text-gray-800 p-2 sm:p-4 pb-12">
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold text-blue-700 pb-2 uppercase">Hướng dẫn & Mẹo Ôn Tập</h2>
+                </div>
+                <div class="bg-white p-5 rounded-xl border-l-4 border-blue-500 shadow-md">
+                    <h3 class="text-lg font-bold flex items-center text-blue-800 mb-3 uppercase tracking-wider">${ICONS.calculator} Mẹo Casio 580VNX</h3>
+                    <ul class="list-none space-y-3 text-sm text-gray-700">
+                        <li><b>1.</b> Giải khoảng cách / thời gian rơi: Dùng <b>MENU 9 2 2</b> (HPT Bậc 2).</li>
+                        <li><b>2.</b> Tổng hợp Lực / Động lượng Vector: Bấm <b>MENU 2 (Số phức)</b>. VD: <code>3∠0 + 5∠135</code> ấn = rồi <b>OPTN ⬇ 1</b> lấy độ lớn.</li>
+                        <li><b>3.</b> Đổi đơn vị: Degree (Mặt phẳng nghiêng): <b>SHIFT MENU 2 1</b>. Radian (Quay chương 10): <b>SHIFT MENU 2 2</b>.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-5 rounded-xl border-l-4 border-green-500 shadow-md">
+                    <h3 class="text-lg font-bold flex items-center text-green-800 mb-3 uppercase tracking-wider">${ICONS.beaker} Thuật Toán Anki Active Recall</h3>
+                    <p class="text-sm text-gray-700 mb-2">Bí kíp học trắc nghiệm: Sau khi trả lời, <b>đọc thí nghiệm giải thích</b> rồi TỰ ĐÁNH GIÁ bằng các nút ở dưới:</p>
+                    <ul class="list-none space-y-1 text-sm text-gray-700 bg-gray-50 p-3 rounded">
+                        <li>🔴 <b>Lại/Khó:</b> Câu hỏi sẽ lặp lại <b>bất thình lình</b> ở ngay 1-3 câu tiếp theo để nhắc nhớ.</li>
+                        <li>🟢 <b>Tốt/Dễ:</b> Thu gọn câu hỏi, tính là Đã Thuộc (Lên lịch nhắc vào ngày mai).</li>
+                    </ul>
+                </div>
+            </div>`;
 
-            // Axis labels
-            ctx.fillText('Ox (Hoành)', width - 40, originY - 15);
-            ctx.fillText('Oy (Tung)', originX + 30, 15);
+        const app = {
+            state: {
+                activeChapter: CHAPTER_DATA[0].id,
+                activeTab: 'guide', 
+                sidebarOpen: false,
+                // Lưu session Anki cho mỗi chương
+                sessions: {} 
+            },
 
-            // Numbers on X-axis
-            for(let i = 1; (originX + i * unit) < width; i++) {
-                ctx.fillText(i, originX + i * unit, originY + 15);
-                ctx.fillText(-i, originX - i * unit, originY + 15);
-            }
-             // Numbers on Y-axis
-            for(let i = 1; (originY + i * unit) < height; i++) {
-                ctx.fillText(-i, originX - 15, originY + i * unit);
-                ctx.fillText(i, originX - 15, originY - i * unit);
-            }
-            
-            // Origin
-            ctx.fillText('O(0,0)', originX - 25, originY + 20);
-        }
+            init() {
+                CHAPTER_DATA.forEach(ch => {
+                    // 1. CHUẨN BỊ MẢNG CÂU HỎI
+                    let initialQueue = ch.questions.map((_, i) => ({ instId: `inst_${i}_initial`, qIndex: i }));
+                    
+                    // 2. THUẬT TOÁN SHUFFLE (XÁO TRỘN NGẪU NHIÊN)
+                    for (let i = initialQueue.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [initialQueue[i], initialQueue[j]] = [initialQueue[j], initialQueue[i]];
+                    }
 
-        function toCanvasX(x) {
-            return originX + x * unit;
-        }
+                    this.state.sessions[ch.id] = {
+                        queue: initialQueue, // Hàng đợi hiển thị (đã trộn random)
+                        answers: {}, // instId -> optIndex
+                        ankiRatings: {}, // instId -> rating ('again', 'good'...)
+                        completedSet: new Set() // Tracks unique qIndex completed
+                    };
+                });
+                this.renderSidebar();
+                this.renderTabs();
+                this.renderMain();
+            },
 
-        function toCanvasY(y) {
-            return originY - y * unit;
-        }
-        
-        function plotPoint(x, y, color = '#63b3ed', label = `P(${x}, ${y})`) {
-            const canvasX = toCanvasX(x);
-            const canvasY = toCanvasY(y);
-            
-            // Draw point
-            ctx.beginPath();
-            ctx.arc(canvasX, canvasY, 6, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            
-            // Draw label
-            ctx.fillStyle = '#f7fafc'; // gray-100
-            ctx.font = 'bold 16px Inter';
-            ctx.fillText(label, canvasX + 10, canvasY - 20);
-        }
-
-        // --- ANIMATION LOGIC ---
-        function animatePlot(targetX, targetY) {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-            
-            plotBtn.disabled = true;
-            plotBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-            let currentX = 0;
-            const duration = 1000; // ms for each phase
-            let startTime = null;
-
-            function animateX(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
+            toggleSidebar() {
+                this.state.sidebarOpen = !this.state.sidebarOpen;
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
                 
-                currentX = targetX * progress;
-                
-                drawGrid();
-                
-                // Draw path line for X
-                ctx.beginPath();
-                ctx.moveTo(toCanvasX(0), toCanvasY(0));
-                ctx.lineTo(toCanvasX(currentX), toCanvasY(0));
-                ctx.strokeStyle = '#f56565'; // red-500
-                ctx.lineWidth = 4;
-                ctx.setLineDash([5, 5]);
-                ctx.stroke();
-                ctx.setLineDash([]); // Reset dash
-
-                infoText.textContent = `1. Di chuyển ngang ${targetX} đơn vị dọc trục Ox...`;
-
-                if (progress < 1) {
-                    animationFrameId = requestAnimationFrame(animateX);
+                if (this.state.sidebarOpen) {
+                    sidebar.classList.remove('hidden');
+                    sidebar.classList.add('flex');
+                    overlay.classList.remove('hidden');
                 } else {
-                    startTime = null; // Reset for next animation phase
-                    animationFrameId = requestAnimationFrame(animateY);
+                    sidebar.classList.add('hidden');
+                    sidebar.classList.remove('flex');
+                    overlay.classList.add('hidden');
                 }
-            }
+            },
 
-            let currentY = 0;
-            function animateY(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
+            setChapter(chapterId) {
+                this.state.activeChapter = chapterId;
+                if (this.state.activeTab === 'guide') this.state.activeTab = 'theory';
+                if (window.innerWidth < 1024) this.toggleSidebar(); 
+                this.renderSidebar();
+                this.renderTabs();
+                this.renderMain();
+            },
 
-                currentY = targetY * progress;
-                
-                drawGrid();
-                
-                // Draw static X path
-                ctx.beginPath();
-                ctx.moveTo(toCanvasX(0), toCanvasY(0));
-                ctx.lineTo(toCanvasX(targetX), toCanvasY(0));
-                ctx.strokeStyle = '#f56565';
-                ctx.lineWidth = 4;
-                ctx.setLineDash([5, 5]);
-                ctx.stroke();
-                
-                // Draw animated Y path
-                ctx.beginPath();
-                ctx.moveTo(toCanvasX(targetX), toCanvasY(0));
-                ctx.lineTo(toCanvasX(targetX), toCanvasY(currentY));
-                ctx.strokeStyle = '#48bb78'; // green-500
-                ctx.lineWidth = 4;
-                ctx.stroke();
-                ctx.setLineDash([]);
-                
-                infoText.textContent = `2. Di chuyển dọc ${targetY} đơn vị song song trục Oy...`;
+            setTab(tabId) {
+                this.state.activeTab = tabId;
+                this.renderTabs();
+                this.renderMain();
+            },
 
-                if (progress < 1) {
-                    animationFrameId = requestAnimationFrame(animateY);
+            handleAnswer(instId, optIndex) {
+                const session = this.state.sessions[this.state.activeChapter];
+                session.answers[instId] = optIndex;
+                this.renderMain();
+            },
+
+            handleAnki(instId, qIndex, rating) {
+                const session = this.state.sessions[this.state.activeChapter];
+                session.ankiRatings[instId] = rating;
+
+                if (rating === 'again' || rating === 'hard') {
+                    // 3. THUẬT TOÁN NHẮC LẠI "THÌNH LÌNH" (SPACED REPETITION)
+                    // Lấy vị trí của câu vừa làm xong
+                    const currentIndex = session.queue.findIndex(item => item.instId === instId);
+                    
+                    // Nếu 'Lại': Nhét vào lặp lại sau 1-2 câu. Nếu 'Khó': Nhét lặp lại sau 3-4 câu
+                    let step = (rating === 'again') ? Math.floor(Math.random() * 2) + 2 : Math.floor(Math.random() * 2) + 4;
+                    let insertIndex = currentIndex + step;
+                    
+                    // Giới hạn không cho chèn lố chiều dài hàng đợi
+                    if (insertIndex > session.queue.length) {
+                        insertIndex = session.queue.length;
+                    }
+
+                    // Chèn bản sao mới của câu hỏi vào đúng vị trí để nó nhảy ra thình lình
+                    session.queue.splice(insertIndex, 0, {
+                        instId: `inst_${qIndex}_${Date.now()}`,
+                        qIndex: qIndex
+                    });
+                } else if (rating === 'good' || rating === 'easy') {
+                    // Mark as completely done
+                    session.completedSet.add(qIndex);
+                }
+                
+                this.renderMain();
+            },
+
+            renderTabs() {
+                const tabsContainer = document.getElementById('nav-tabs');
+                const getBtnClass = (isActive) => isActive 
+                    ? 'flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-white text-blue-700 shadow'
+                    : 'flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-blue-100 hover:bg-blue-700';
+
+                tabsContainer.innerHTML = `
+                    <button onclick="app.setTab('guide')" class="${getBtnClass(this.state.activeTab === 'guide')}">
+                        ${ICONS.guide} <span class="ml-2 hidden md:block">Hướng dẫn</span>
+                    </button>
+                    <button onclick="app.setTab('theory')" class="${getBtnClass(this.state.activeTab === 'theory')}">
+                        ${ICONS.theory} <span class="ml-2 hidden sm:block">Lý thuyết</span>
+                    </button>
+                    <button onclick="app.setTab('quiz')" class="${getBtnClass(this.state.activeTab === 'quiz')}">
+                        ${ICONS.quiz} <span class="ml-2 hidden sm:block">Bài tập Anki</span>
+                    </button>
+                `;
+            },
+
+            renderSidebar() {
+                const nav = document.getElementById('sidebar-nav');
+                nav.innerHTML = CHAPTER_DATA.map(ch => {
+                    const isActive = this.state.activeChapter === ch.id && this.state.activeTab !== 'guide';
+                    const activeClasses = isActive 
+                        ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' 
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-l-4 border-transparent';
+                    
+                    return `
+                        <button onclick="app.setChapter('${ch.id}')" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeClasses}">
+                            ${ch.title}
+                        </button>
+                    `;
+                }).join('');
+            },
+
+            renderMain() {
+                const main = document.getElementById('main-content');
+                const currentData = CHAPTER_DATA.find(ch => ch.id === this.state.activeChapter);
+
+                if (this.state.activeTab === 'guide') {
+                    main.innerHTML = `<div class="max-w-4xl mx-auto">${GUIDE_CONTENT}</div>`;
+                    return;
+                }
+
+                if (this.state.activeTab === 'theory') {
+                    main.innerHTML = `
+                        <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-12">
+                            <div class="bg-gradient-to-r from-blue-50 to-white px-6 py-4 border-b border-gray-200">
+                                <h2 class="text-2xl font-bold text-gray-800">${currentData.title}</h2>
+                                <p class="text-sm text-gray-500 mt-1">Tóm tắt công thức & Lý thuyết trọng tâm</p>
+                            </div>
+                            <div class="p-6 animate-fade-in text-gray-800 leading-relaxed">${currentData.theory}</div>
+                        </div>`;
+                    return;
+                }
+
+                // QUIZ MODE with SRS
+                const session = this.state.sessions[this.state.activeChapter];
+                const totalQuestions = currentData.questions.length;
+                const completedCount = session.completedSet.size;
+                const progressPct = Math.round((completedCount / totalQuestions) * 100) || 0;
+
+                let contentHTML = `
+                    <div class="mb-6 bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200 relative">
+                        <div class="bg-blue-500 h-full transition-all duration-500" style="width: ${progressPct}%"></div>
+                        <span class="absolute inset-0 flex justify-center items-center text-[10px] font-bold ${progressPct > 50 ? 'text-white' : 'text-blue-900'}">Đã thuộc: ${completedCount}/${totalQuestions} câu</span>
+                    </div>
+                    <div class="animate-fade-in space-y-6">
+                `;
+
+                // Render Queue
+                session.queue.forEach((inst, index) => {
+                    const item = currentData.questions[inst.qIndex];
+                    const instId = inst.instId;
+                    const rating = session.ankiRatings[instId];
+                    const selectedOpt = session.answers[instId];
+                    const hasSelectedAnswer = selectedOpt !== undefined;
+
+                    // 1. If rated, collapse the card
+                    if (rating) {
+                        const isDone = rating === 'good' || rating === 'easy';
+                        const statusText = isDone ? '✅ Đã hoàn thành' : '🔄 Sẽ lặp lại thình lình để ôn tập';
+                        const bgCol = isDone ? 'bg-green-50 text-green-800 border-green-200' : 'bg-orange-50 text-orange-800 border-orange-200';
+                        
+                        contentHTML += `
+                            <div class="rounded-lg border p-3 shadow-sm flex items-center justify-between opacity-70 ${bgCol}">
+                                <span class="text-sm font-medium line-clamp-1 flex-1 mr-4">Câu ${inst.qIndex + 1}: ${item.q.substring(0, 40)}...</span>
+                                <span class="text-xs font-bold px-2 py-1 rounded bg-white bg-opacity-50 shrink-0">${statusText}</span>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // 2. Full active card
+                    const optionsHTML = item.options.map((opt, optIndex) => {
+                        const isSelected = selectedOpt === optIndex;
+                        const isCorrect = item.correct === optIndex;
+                        
+                        let labelClass = 'bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer';
+                        let badgeHTML = '';
+
+                        // Color Logic upon selection
+                        if (hasSelectedAnswer) {
+                            if (isCorrect) {
+                                // Right answer -> Green
+                                labelClass = 'bg-green-100 border-green-500 text-green-900 shadow-sm font-bold ring-2 ring-green-300';
+                                badgeHTML = `<span class="ml-auto text-green-600 bg-white rounded-full px-2 text-xs font-bold border border-green-200 animate-slide-up">ĐÚNG</span>`;
+                            } else if (isSelected && !isCorrect) {
+                                // Wrong selected -> Red
+                                labelClass = 'bg-red-50 border-red-400 text-red-800 shadow-sm font-medium opacity-80 line-through';
+                                badgeHTML = `<span class="ml-auto text-red-600 bg-white rounded-full px-2 text-xs font-bold border border-red-200 animate-slide-up">SAI</span>`;
+                            } else {
+                                // Wrong unselected -> Dim
+                                labelClass = 'bg-gray-50 border-gray-200 opacity-40 cursor-default';
+                            }
+                        }
+
+                        // Disabled click if already answered
+                        const clickHandler = hasSelectedAnswer ? '' : `onclick="app.handleAnswer('${instId}', ${optIndex})"`;
+
+                        return `
+                            <div ${clickHandler} class="flex items-center p-3 rounded-lg border transition-all duration-300 ${labelClass}">
+                                <div class="flex items-center h-5">
+                                    <input type="radio" ${isSelected ? 'checked' : ''} ${hasSelectedAnswer ? 'disabled' : ''} class="focus:ring-blue-500 h-4 w-4 text-blue-600" />
+                                </div>
+                                <div class="ml-3 text-sm flex-1 leading-relaxed">${opt}</div>
+                                ${badgeHTML}
+                            </div>
+                        `;
+                    }).join('');
+
+                    let experimentHTML = '';
+                    if (hasSelectedAnswer && item.experiment) {
+                        experimentHTML = `
+                            <div class="mt-5 animate-slide-up border-t border-gray-100 pt-4">
+                                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-inner mb-4">
+                                    <p class="text-sm text-blue-900 leading-relaxed font-medium">${item.experiment}</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                    <p class="text-sm font-bold text-gray-700 mb-3 text-center uppercase tracking-wider">Đánh giá độ hiểu bài (Anki)</p>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        <button onclick="app.handleAnki('${instId}', ${inst.qIndex}, 'again')" class="px-2 py-2 text-xs font-bold rounded text-white bg-red-500 hover:bg-red-600 shadow transition-colors">🔴 Lại (Quên sạch)</button>
+                                        <button onclick="app.handleAnki('${instId}', ${inst.qIndex}, 'hard')" class="px-2 py-2 text-xs font-bold rounded text-white bg-orange-500 hover:bg-orange-600 shadow transition-colors">🟠 Khó (Hơi rối)</button>
+                                        <button onclick="app.handleAnki('${instId}', ${inst.qIndex}, 'good')" class="px-2 py-2 text-xs font-bold rounded text-white bg-green-500 hover:bg-green-600 shadow transition-colors">🟢 Tốt (Hiểu rõ)</button>
+                                        <button onclick="app.handleAnki('${instId}', ${inst.qIndex}, 'easy')" class="px-2 py-2 text-xs font-bold rounded text-white bg-blue-500 hover:bg-blue-600 shadow transition-colors">🔵 Dễ (Nhớ liền)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    contentHTML += `
+                        <div class="bg-white rounded-xl border border-gray-300 p-5 shadow-md hover:shadow-lg transition-shadow relative">
+                            <span class="absolute -top-3 left-4 bg-gray-800 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">Câu ${inst.qIndex + 1}</span>
+                            <p class="font-bold text-gray-800 mb-4 mt-2 text-base leading-relaxed">${item.q}</p>
+                            <div class="space-y-2">
+                                ${optionsHTML}
+                            </div>
+                            ${experimentHTML}
+                        </div>
+                    `;
+                });
+
+                if (completedCount === totalQuestions) {
+                    contentHTML += `
+                        <div class="text-center pt-8 pb-4 animate-slide-up">
+                            <div class="inline-block p-4 rounded-full bg-green-100 mb-4">
+                                <span class="text-4xl">🎉</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-green-700">Xuất sắc!</h3>
+                            <p class="text-gray-500 mt-2">Em đã hoàn thành trọn vẹn thuật toán Anki cho Chương này.</p>
+                        </div>
+                    `;
                 } else {
-                    plotPoint(targetX, targetY);
-                    infoText.textContent = `Hoàn thành! Đã xác định điểm P(${targetX}, ${targetY}). 🎉`;
-                    plotBtn.disabled = false;
-                    plotBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    contentHTML += `<div class="text-center pt-8 pb-4 opacity-50"><p class="text-gray-400 text-sm">-- Hết danh sách chờ --</p></div>`;
                 }
+
+                contentHTML += `</div>`; // Close space-y-6
+
+                main.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-12">
+                        <div class="bg-gradient-to-r from-blue-50 to-white px-6 py-4 border-b border-gray-200">
+                            <h2 class="text-2xl font-bold text-gray-800">${currentData.title}</h2>
+                            <p class="text-sm text-gray-500 mt-1">Câu hỏi trắc nghiệm tự luyện & Đánh giá Anki</p>
+                        </div>
+                        <div class="p-4 sm:p-6">
+                            ${contentHTML}
+                        </div>
+                    </div>
+                `;
             }
+        };
 
-            animationFrameId = requestAnimationFrame(animateX);
-        }
-
-        // --- EVENT LISTENERS ---
-        plotBtn.addEventListener('click', () => {
-            const x = parseFloat(xInput.value) || 0;
-            const y = parseFloat(yInput.value) || 0;
-            animatePlot(x, y);
-        });
-        
-        resetBtn.addEventListener('click', () => {
-             if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-            drawGrid();
-            infoText.textContent = 'Đã làm mới. Hãy thử tọa độ khác!';
-            plotBtn.disabled = false;
-            plotBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        });
-
-        window.addEventListener('resize', setupCanvas);
-
-        // --- INITIALIZATION ---
-        setupCanvas();
-
+        // Khởi chạy App
+        app.init();
     </script>
 </body>
 </html>
